@@ -6,25 +6,19 @@ import { MaterialType } from '../types';
 const QuotationPreview: React.FC = () => {
   const { quotation } = useQuotation();
 
-  // Group materials by type and sort alphabetically
-  const groupedMaterials = quotation.materials.reduce((acc, material) => {
-    if (!acc[material.type]) {
-      acc[material.type] = [];
-    }
-    acc[material.type].push(material);
+  // Group by type & sort
+  const grouped = quotation.materials.reduce((acc, m) => {
+    if (!acc[m.type]) acc[m.type] = [];
+    acc[m.type].push(m);
     return acc;
   }, {} as Record<MaterialType, typeof quotation.materials>);
-  
-  const sortedTypes = Object.keys(groupedMaterials).sort() as MaterialType[];
-  
-  // Calculate total
+  const types = Object.keys(grouped).sort() as MaterialType[];
+
   const total = quotation.materials.reduce(
-    (sum, material) => sum + calculateTotal(material.pricePerUnit, material.quantity),
+    (sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity),
     0
   );
-
-  // Format installment value if applicable
-  const installmentValue = quotation.installments && quotation.installments > 1
+  const installment = quotation.installments && quotation.installments > 1
     ? formatCurrency(total / quotation.installments)
     : null;
 
@@ -44,7 +38,7 @@ const QuotationPreview: React.FC = () => {
       <div className="flex justify-between items-center mb-4 border-b pb-2">
         <h2 className="text-xl font-semibold text-slate-800">Prévia do Orçamento</h2>
       </div>
-      
+
       <div className="border rounded-lg overflow-hidden">
         <div className="bg-slate-800 text-white p-6">
           <h1 className="text-2xl font-bold mb-2">Orçamento - {quotation.company}</h1>
@@ -53,7 +47,7 @@ const QuotationPreview: React.FC = () => {
             <p>Validade: {formatDate(quotation.validUntil)} às 00:00</p>
           </div>
         </div>
-        
+
         <div className="p-6 bg-white">
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2 text-slate-800">Informações</h3>
@@ -62,11 +56,10 @@ const QuotationPreview: React.FC = () => {
               <p><span className="font-medium">Cliente:</span> {quotation.client}</p>
             </div>
           </div>
-          
+
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2 text-slate-800">Resumo do Pedido</h3>
-            
-            {sortedTypes.map((type) => (
+            {types.map(type => (
               <div key={type} className="mb-4">
                 <h4 className="text-md font-medium text-slate-700 mb-2">{type}</h4>
                 <div className="overflow-x-auto">
@@ -79,23 +72,23 @@ const QuotationPreview: React.FC = () => {
                         <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Medida líquida (m x m)</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Qtd</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Total</th>
-                        {groupedMaterials[type].some(m => m.details) && (<th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Detalhes</th>)}
+                        {(grouped[type].some(m => m.details)) && <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Detalhes</th>}
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-slate-200">
-                      {groupedMaterials[type].map((material) => {
+                      {grouped[type].map(material => {
                         const grossArea = material.dimensions.width * material.dimensions.height * material.quantity;
-                        const netWidth = material.dimensions.width - 0.05;
-                        const netHeight = material.dimensions.height - 0.05;
+                        const netW = (material.dimensions.width - 0.05).toFixed(2);
+                        const netH = (material.dimensions.height - 0.05).toFixed(2);
                         return (
                           <tr key={material.id}>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{material.name}</td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{formatCurrency(material.pricePerUnit)}</td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{grossArea.toFixed(2)}</td>
-                            <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{`${netWidth.toFixed(2)} x ${netHeight.toFixed(2)}`}</td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{`${netW} x ${netH}`}</td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{material.quantity}</td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-slate-900">{formatCurrency(calculateTotal(material.pricePerUnit, material.quantity))}</td>
-                            {groupedMaterials[type].some(m => m.details) && (<td className="px-4 py-2 text-sm text-slate-500">{material.details || "-"}</td>)}
+                            {grouped[type].some(m => m.details) && <td className="px-4 py-2 text-sm text-slate-500">{material.details || '-'}</td>}
                           </tr>
                         );
                       })}
@@ -104,13 +97,13 @@ const QuotationPreview: React.FC = () => {
                 </div>
               </div>
             ))}
-            
+
             <div className="mt-6 text-right">
               <p className="text-xl font-bold text-slate-800">Valor Total: {formatCurrency(total)}</p>
-              {installmentValue && (<p className="text-md text-slate-700 mt-1">{quotation.installments}x de {installmentValue} ({quotation.paymentMethod})</p>)}
+              {installment && <p className="text-md text-slate-700 mt-1">{quotation.installments}x de {installment} ({quotation.paymentMethod})</p>}
             </div>
           </div>
-          
+
           <div className="mt-4 text-sm">
             <p className="font-medium mb-1">Forma de Pagamento: {quotation.paymentMethod}</p>
             {quotation.showBankDetails && quotation.bankDetails && (
@@ -125,11 +118,13 @@ const QuotationPreview: React.FC = () => {
               </div>
             )}
           </div>
-          
-          <div className="mt-6 text-sm text-slate-500 italic border-t pt-4">
-            <p>Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.</p>
-            <p>O valor final será baseado no ramenio oficial com medida real liquida de cada chapa.</p>
-          </div>
+
+          {quotation.showDefaultMeasure && (
+            <div className="mt-4 text-sm text-slate-500 italic border-t pt-4">
+              <p>Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.</p>
+              <p>O valor final será baseado no ramenio oficial com medida real líquida de cada chapa.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
