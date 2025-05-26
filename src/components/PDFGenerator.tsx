@@ -3,7 +3,7 @@ import { useQuotation } from '../context/QuotationContext';
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate, calculateTotal } from '../utils/formatters';
 import { MaterialType } from '../types';
-import { File as FilePdf, Share2 } from 'lucide-react';
+import { File as FilePdf } from 'lucide-react';
 
 const PDFGenerator: React.FC = () => {
   const { quotation } = useQuotation();
@@ -40,29 +40,40 @@ const PDFGenerator: React.FC = () => {
       doc.text(type, 15, yPos);
       yPos += 6;
 
-      doc.setFontSize(9);
+      // Definir larguras de coluna
+      const colX = [15, 80, 110, 140, 165, 185, 205];
+      const headers = ['Material', 'Preço/m²', 'Área (m²)', 'Medida líquida', 'Qtd', 'Total', 'Detalhes'];
+
       doc.setFont('helvetica', 'bold');
-      ['Material', 'Preço/m²', 'Área (m²)', 'Medida líquida', 'Qtd', 'Total', 'Detalhes'].forEach((header, i) => {
-        doc.text(header, 15 + i * 27, yPos);
+      doc.setFontSize(9);
+      headers.forEach((hdr, i) => {
+        doc.text(hdr, colX[i], yPos);
       });
       yPos += 5;
 
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
       grouped[type].forEach((m) => {
-        const netW = (m.dimensions.width - 0.05).toFixed(2);
-        const netH = (m.dimensions.height - 0.05).toFixed(2);
-        doc.text(m.name, 15, yPos);
-        doc.text(`${formatCurrency(m.pricePerUnit)}`, 42, yPos);
-        doc.text(`${(m.dimensions.width * m.dimensions.height).toFixed(2)}`, 69, yPos);
-        doc.text(`${netW} x ${netH}`, 96, yPos);
-        doc.text(`${m.quantity}`, 123, yPos);
-        doc.text(`${formatCurrency(calculateTotal(m.pricePerUnit, m.quantity))}`, 150, yPos);
-        doc.text(m.details || '-', 177, yPos);
-        yPos += 6;
         if (yPos > 260) {
           doc.addPage();
           yPos = 20;
         }
+        const grossArea = (m.dimensions.width * m.dimensions.height).toFixed(2);
+        const netW = (m.dimensions.width - 0.05).toFixed(2);
+        const netH = (m.dimensions.height - 0.05).toFixed(2);
+        const values = [
+          m.name,
+          formatCurrency(m.pricePerUnit),
+          grossArea,
+          `${netW} x ${netH}`,
+          String(m.quantity),
+          formatCurrency(calculateTotal(m.pricePerUnit, m.quantity)),
+          m.details || '-'
+        ];
+        values.forEach((txt, i) => {
+          doc.text(txt, colX[i], yPos);
+        });
+        yPos += 6;
       });
     });
 
