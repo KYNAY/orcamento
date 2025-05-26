@@ -10,6 +10,7 @@ export interface Material {
     height: number;
   };
   finishing: FinishingType;
+  showStandardMessage?: boolean;
 }
 
 export enum MaterialType {

@@ -9,41 +9,48 @@ const MaterialForm: React.FC = () => {
   const [name, setName] = useState('');
   const [type, setType] = useState<MaterialType>(MaterialType.GRANITE);
   const [pricePerUnit, setPricePerUnit] = useState<number>(0);
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState<string>('');
   const [details, setDetails] = useState('');
-  const [width, setWidth] = useState<number>(2.90);
-  const [height, setHeight] = useState<number>(1.90);
+  const [width, setWidth] = useState<string>('');
+  const [height, setHeight] = useState<string>('');
   const [finishing, setFinishing] = useState<FinishingType>(FinishingType.POLISHED);
+  const [showStandardMessage, setShowStandardMessage] = useState(true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Convert dimensions to numbers, use default if empty
+    const numWidth = width ? parseFloat(width) : 2.90;
+    const numHeight = height ? parseFloat(height) : 1.90;
+    
     // Calculate net dimensions (subtract 5cm from each dimension)
-    const netWidth = width - 0.05;
-    const netHeight = height - 0.05;
+    const netWidth = numWidth - 0.05;
+    const netHeight = numHeight - 0.05;
     
     addMaterial({
       name,
       type,
       pricePerUnit,
-      quantity,
+      quantity: parseInt(quantity) || 1,
       details,
       dimensions: {
-        width,
-        height,
+        width: numWidth,
+        height: numHeight,
       },
       finishing,
+      showStandardMessage,
     });
     
     // Reset form
     setName('');
     setType(MaterialType.GRANITE);
     setPricePerUnit(0);
-    setQuantity(1);
+    setQuantity('');
     setDetails('');
-    setWidth(2.90);
-    setHeight(1.90);
+    setWidth('');
+    setHeight('');
     setFinishing(FinishingType.POLISHED);
+    setShowStandardMessage(true);
   };
 
   return (
@@ -135,7 +142,7 @@ const MaterialForm: React.FC = () => {
                 min="0"
                 step="0.01"
                 value={width}
-                onChange={(e) => setWidth(parseFloat(e.target.value) || 2.90)}
+                onChange={(e) => setWidth(e.target.value)}
                 className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
                 placeholder="2.90"
               />
@@ -145,14 +152,16 @@ const MaterialForm: React.FC = () => {
                 min="0"
                 step="0.01"
                 value={height}
-                onChange={(e) => setHeight(parseFloat(e.target.value) || 1.90)}
+                onChange={(e) => setHeight(e.target.value)}
                 className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
                 placeholder="1.90"
               />
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Medida líquida: {(width - 0.05).toFixed(2)}m x {(height - 0.05).toFixed(2)}m
-            </p>
+            {(width || height) && (
+              <p className="text-xs text-slate-500 mt-1">
+                Medida líquida: {(parseFloat(width || '2.90') - 0.05).toFixed(2)}m x {(parseFloat(height || '1.90') - 0.05).toFixed(2)}m
+              </p>
+            )}
           </div>
           
           <div>
@@ -162,9 +171,10 @@ const MaterialForm: React.FC = () => {
             <input
               type="number"
               min="1"
-              value={quantity || 1}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
               className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+              placeholder="1"
               required
             />
           </div>
@@ -181,6 +191,19 @@ const MaterialForm: React.FC = () => {
             placeholder="Acabamentos, observações, etc."
             rows={2}
           />
+        </div>
+
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="showStandardMessage"
+            checked={showStandardMessage}
+            onChange={(e) => setShowStandardMessage(e.target.checked)}
+            className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
+          />
+          <label htmlFor="showStandardMessage" className="ml-2 text-sm text-slate-700">
+            Mostrar mensagem de medida padrão
+          </label>
         </div>
         
         <div className="flex justify-end">

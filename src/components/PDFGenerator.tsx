@@ -3,7 +3,7 @@ import { useQuotation } from '../context/QuotationContext';
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate, calculateTotal } from '../utils/formatters';
 import { MaterialType } from '../types';
-import { File as FilePdf } from 'lucide-react';
+import { File as FilePdf, Share2 } from 'lucide-react';
 
 const PDFGenerator: React.FC = () => {
   const { quotation } = useQuotation();
@@ -132,24 +132,43 @@ const PDFGenerator: React.FC = () => {
     }
     
     // Standard measurement note
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "italic");
-    doc.text("Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.", 15, yPos);
-    yPos += 4;
-    doc.text("O valor final será baseado no ramenio oficial com medida real liquida de cada chapa.", 15, yPos);
+    if (quotation.materials.some(m => m.showStandardMessage)) {
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.text("Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.", 15, yPos);
+      yPos += 4;
+      doc.text("O valor final será baseado no ramenio oficial com medida real liquida de cada chapa.", 15, yPos);
+    }
     
-    // Save PDF
+    return doc;
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = generatePDF();
     const filename = `Orçamento ${quotation.company} - ${quotation.client}.pdf`;
     doc.save(filename);
   };
 
-  // Only enable the button if we have the minimum required data
+  const handleShareWhatsApp = () => {
+    const doc = generatePDF();
+    const pdfBlob = doc.output('blob');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64data = reader.result?.toString().split(',')[1];
+      const text = `Orçamento - ${quotation.company}\nCliente: ${quotation.client}`;
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(whatsappUrl, '_blank');
+    };
+    reader.readAsDataURL(pdfBlob);
+  };
+
+  // Only enable the buttons if we have the minimum required data
   const isDisabled = !quotation.company || !quotation.client || quotation.materials.length === 0;
 
   return (
-    <div className="mt-6 flex justify-center">
+    <div className="mt-6 flex justify-center gap-4">
       <button
-        onClick={generatePDF}
+        onClick={handleDownloadPDF}
         disabled={isDisabled}
         className={`px-6 py-3 rounded-md flex items-center transition duration-200 ${
           isDisabled
@@ -159,6 +178,19 @@ const PDFGenerator: React.FC = () => {
       >
         <FilePdf className="h-6 w-6 mr-2" />
         Gerar Orçamento PDF
+      </button>
+
+      <button
+        onClick={handleShareWhatsApp}
+        disabled={isDisabled}
+        className={`px-6 py-3 rounded-md flex items-center transition duration-200 ${
+          isDisabled
+            ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+            : 'bg-green-600 hover:bg-green-700 text-white shadow-md'
+        }`}
+      >
+        <Share2 className="h-6 w-6 mr-2" />
+        Compartilhar via WhatsApp
       </button>
     </div>
   );
