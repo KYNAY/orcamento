@@ -33,28 +33,39 @@ const PDFGenerator: React.FC = () => {
       doc.text(type, 15, yPos); yPos += 6;
 
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-      ['Material', 'Preço/m²', 'Área (m²)', 'Medida líquida', 'Qtd', 'Total', 'Detalhes'].forEach((header, i) => {
-        doc.text(header, 15 + i * 25, yPos);
-      });
-      yPos += 5;
+      // define um array de posições X para cada coluna
+const colX = [15, 80, 110, 140, 165, 185, 205];
 
-      doc.setFont('helvetica', 'normal');
-      grouped[type].forEach((m) => {
-        if (yPos > 270) { doc.addPage(); yPos = 20; }
-        const grossArea = m.dimensions.width * m.dimensions.height * m.quantity;
-        const netW = (m.dimensions.width - 0.05).toFixed(2);
-        const netH = (m.dimensions.height - 0.05).toFixed(2);
-        [
-          m.name,
-          formatCurrency(m.pricePerUnit),
-          grossArea.toFixed(2),
-          `${netW} x ${netH}`,
-          String(m.quantity),
-          formatCurrency(calculateTotal(m.pricePerUnit, m.quantity)),
-          m.details || '-'
-        ].forEach((text, i) => {
-          doc.text(text, 15 + i * 25, yPos);
-        });
+// cabeçalhos
+const headers = ['Material', 'Preço/m²', 'Área (m²)', 'Medida líquida', 'Qtd', 'Total', 'Detalhes'];
+headers.forEach((hdr, i) => {
+  doc.text(hdr, colX[i], yPos);
+});
+yPos += 5;
+
+// linhas
+grouped[type].forEach((m) => {
+  if (yPos > 270) { doc.addPage(); yPos = 20; }
+  const grossArea = m.dimensions.width * m.dimensions.height * m.quantity;
+  const netW = (m.dimensions.width - 0.05).toFixed(2);
+  const netH = (m.dimensions.height - 0.05).toFixed(2);
+
+  const values = [
+    m.name,
+    formatCurrency(m.pricePerUnit),
+    grossArea.toFixed(2),
+    `${netW} x ${netH}`,
+    String(m.quantity),
+    formatCurrency(calculateTotal(m.pricePerUnit, m.quantity)),
+    m.details || '-'
+  ];
+
+  values.forEach((txt, i) => {
+    doc.text(txt, colX[i], yPos);
+  });
+  yPos += 6;
+});
+
         yPos += 6;
       });
       yPos += 4;
