@@ -100,14 +100,6 @@ const MaterialList: React.FC = () => {
         <div className="text-xl font-bold text-slate-800">Total: {formatCurrency(total)}</div>
       </div>
 
-      {quotation.showDefaultMeasure && (
-        <div className="mt-2 text-sm text-slate-500 italic">
-          <p>Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.</p>
-          <p>O valor final será baseado no ramenio oficial com medida real líquida de cada chapa.</p>
-        </div>
-      )}
-    </div>
-  );
 };
 
 export default MaterialList;
