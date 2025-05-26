@@ -5,9 +5,9 @@ import { Edit, Trash2 } from 'lucide-react';
 import { MaterialType } from '../types';
 
 const MaterialList: React.FC = () => {
-  const { quotation, deleteMaterial, editMaterial } = useQuotation();
+  const { quotation, deleteMaterial } = useQuotation();
   
-  // Agrupa materiais por tipo
+  // Group materials by type
   const groupedMaterials = quotation.materials.reduce((acc, material) => {
     if (!acc[material.type]) {
       acc[material.type] = [];
@@ -15,11 +15,11 @@ const MaterialList: React.FC = () => {
     acc[material.type].push(material);
     return acc;
   }, {} as Record<MaterialType, typeof quotation.materials>);
-
-  // Ordena os tipos alfabeticamente
+  
+  // Sort material types alphabetically
   const sortedTypes = Object.keys(groupedMaterials).sort() as MaterialType[];
-
-  // Calcula total geral
+  
+  // Calculate total
   const total = quotation.materials.reduce(
     (sum, material) => sum + calculateTotal(material.pricePerUnit, material.quantity),
     0
@@ -67,35 +67,38 @@ const MaterialList: React.FC = () => {
                       Total
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Detalhes
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
                       Ações
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-slate-200">
-                  {groupedMaterials[type].map((material, idx) => (
-                    <tr key={idx}>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-700">
+                  {groupedMaterials[type].map((material) => (
+                    <tr key={material.id} className="hover:bg-slate-50 transition">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">
                         {material.name}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-700">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">
                         {formatCurrency(material.pricePerUnit)}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-700">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">
                         {material.quantity}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-700">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900">
                         {formatCurrency(calculateTotal(material.pricePerUnit, material.quantity))}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-700 flex items-center">
-                        {/* Editar */}
+                      <td className="px-4 py-3 text-sm text-slate-500 max-w-[200px] truncate">
+                        {material.details || "-"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          onClick={() => editMaterial(material.id)}
                           className="text-indigo-600 hover:text-indigo-900 mr-3 transition"
                           title="Editar"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
-                        {/* Excluir */}
                         <button
                           onClick={() => deleteMaterial(material.id)}
                           className="text-red-600 hover:text-red-900 transition"
@@ -111,25 +114,16 @@ const MaterialList: React.FC = () => {
             </div>
           </div>
         ))}
-
-        {/* Total Geral */}
-        <div className="text-right">
-          <p className="text-lg font-semibold text-slate-800">
-            Total: {formatCurrency(total)}
-          </p>
+      </div>
+      
+      <div className="mt-6 flex justify-end border-t pt-4">
+        <div className="text-xl font-bold text-slate-800">
+          Total: {formatCurrency(total)}
         </div>
-
-        {/* Mensagem padrão, condicional */}
-        {quotation.materials.some(m => m.showStandardMessage) && (
-          <div className="mt-2 text-sm text-slate-500 italic">
-            <p>
-              Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.
-            </p>
-            <p>
-              O valor final será baseado no romaneio oficial com medida real líquida de cada chapa.
-            </p>
-          </div>
-        )}
+      </div>
+      
+      <div className="mt-2 text-sm text-slate-500 italic">
+        <p>Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos. O valor final será baseado no ramenio oficial com medida real liquida de cada chapa.</p>
       </div>
     </div>
   );

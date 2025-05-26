@@ -8,125 +8,189 @@ import { File as FilePdf, Share2 } from 'lucide-react';
 const PDFGenerator: React.FC = () => {
   const { quotation } = useQuotation();
 
-  // Gera e retorna o documento jsPDF montado com os dados do orçamento
-  const generateDocument = (): jsPDF => {
+  const generatePDF = () => {
     const doc = new jsPDF();
-
-    // Cabeçalho
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Orçamento - ${quotation.company}`, 10, 20);
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Cliente: ${quotation.client}`, 10, 30);
-    doc.text(`Vendedor: ${quotation.vendor} - ${quotation.company}`, 10, 36);
-    doc.text(`Data: ${formatDate(quotation.date)}`, 10, 42);
-    doc.text(`Validade: até 00:00`, 120, 42);
-
-    // Agrupa materiais por tipo
-    let y = 48;
-    const grouped = quotation.materials.reduce((acc, mat) => {
-      (acc[mat.type] = acc[mat.type] || []).push(mat);
+    
+    // Group materials by type
+    const groupedMaterials = quotation.materials.reduce((acc, material) => {
+      if (!acc[material.type]) {
+        acc[material.type] = [];
+      }
+      acc[material.type].push(material);
       return acc;
     }, {} as Record<MaterialType, typeof quotation.materials>);
-    const types = Object.keys(grouped).sort() as MaterialType[];
-
-    // Listagem de cada tipo e itens
-    types.forEach(typeKey => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(typeKey, 10, (y += 6));
-
-      grouped[typeKey]
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .forEach(item => {
-          const total = calculateTotal(item.pricePerUnit, item.quantity);
-          doc.setFont('helvetica', 'normal');
-          doc.text(
-            `- ${item.name}: ${item.quantity} x ${formatCurrency(item.pricePerUnit)} = ${formatCurrency(total)}`,
-            12,
-            (y += 6)
-          );
-        });
-    });
-
-    // Total final
-    const finalTotal = quotation.materials.reduce(
-      (sum, mat) => sum + calculateTotal(mat.pricePerUnit, mat.quantity),
+    
+    // Sort material types alphabetically
+    const sortedTypes = Object.keys(groupedMaterials).sort() as MaterialType[];
+    
+    // Calculate total
+    const total = quotation.materials.reduce(
+      (sum, material) => sum + calculateTotal(material.pricePerUnit, material.quantity),
       0
     );
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Total: ${formatCurrency(finalTotal)}`, 10, (y += 10));
 
-    // Observação padrão condicional
-    y += 6;
-    doc.setFont('helvetica', 'italic');
-    doc.text(
-      'Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.',
-      10,
-      y,
-      { maxWidth: 190 }
-    );
-    doc.text(
-      'O valor final será baseado no romaneio oficial com medida real líquida de cada chapa.',
-      10,
-      (y += 6),
-      { maxWidth: 190 }
-    );
-
+    // Set up PDF
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text(`Orçamento - ${quotation.company}`, 15, 20);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Data: ${formatDate(new Date())}`, 15, 30);
+    doc.text(`Validade: ${formatDate(quotation.validUntil)} às 00:00`, 15, 35);
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Informações:", 15, 45);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Vendedor: ${quotation.seller} - ${quotation.company}`, 15, 52);
+    doc.text(`Cliente: ${quotation.client}`, 15, 58);
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Resumo do Pedido:", 15, 68);
+    
+    let yPos = 78;
+    
+    // Add materials by type
+    sortedTypes.forEach((type) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text(type, 15, yPos);
+      yPos += 6;
+      
+      // Table header
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("Material", 15, yPos);
+      doc.text("Preço/m²", 80, yPos);
+      doc.text("Qtd", 110, yPos);
+      doc.text("Total", 130, yPos);
+      doc.text("Detalhes", 160, yPos);
+      yPos += 5;
+      
+      // Table rows
+      doc.setFont("helvetica", "normal");
+      groupedMaterials[type].forEach((material) => {
+        // Add new page if needed
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.text(material.name, 15, yPos);
+        doc.text(formatCurrency(material.pricePerUnit), 80, yPos);
+        doc.text(material.quantity.toString(), 110, yPos);
+        doc.text(formatCurrency(calculateTotal(material.pricePerUnit, material.quantity)), 130, yPos);
+        doc.text(material.details || "-", 160, yPos);
+        yPos += 6;
+      });
+      
+      yPos += 4;
+    });
+    
+    // Add new page if needed for payment info
+    if (yPos > 240) {
+      doc.addPage();
+      yPos = 20;
+    }
+    
+    // Total
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(`Valor Total: ${formatCurrency(total)}`, 130, yPos);
+    yPos += 10;
+    
+    // Payment method
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Forma de Pagamento: ${quotation.paymentMethod}`, 15, yPos);
+    yPos += 6;
+    
+    // Installments if applicable
+    if (quotation.installments && quotation.installments > 1) {
+      doc.text(`${quotation.installments}x de ${formatCurrency(total / quotation.installments)}`, 15, yPos);
+      yPos += 6;
+    }
+    
+    // Bank details if enabled
+    if (quotation.showBankDetails && quotation.bankDetails) {
+      yPos += 4;
+      doc.setFont("helvetica", "bold");
+      doc.text("Dados para Depósito:", 15, yPos);
+      yPos += 6;
+      
+      doc.setFont("helvetica", "normal");
+      doc.text(`Banco: ${quotation.bankDetails.bank}`, 15, yPos); yPos += 5;
+      doc.text(`Agência: ${quotation.bankDetails.agency}`, 15, yPos); yPos += 5;
+      doc.text(`Conta: ${quotation.bankDetails.account}`, 15, yPos); yPos += 5;
+      doc.text(`CNPJ: ${quotation.bankDetails.cnpj}`, 15, yPos); yPos += 5;
+      doc.text(`Nome: ${quotation.bankDetails.companyName}`, 15, yPos); yPos += 5;
+      doc.text(`PIX: ${quotation.bankDetails.pix}`, 15, yPos); yPos += 10;
+    }
+    
+    // Standard measurement note
+    if (quotation.materials.some(m => m.showStandardMessage)) {
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.text("Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.", 15, yPos);
+      yPos += 4;
+      doc.text("O valor final será baseado no ramenio oficial com medida real liquida de cada chapa.", 15, yPos);
+    }
+    
     return doc;
   };
 
-  // Faz download do PDF
-  const handleDownload = () => {
-    const doc = generateDocument();
-    doc.save(`Orçamento - ${quotation.company}.pdf`);
+  const handleDownloadPDF = () => {
+    const doc = generatePDF();
+    const filename = `Orçamento ${quotation.company} - ${quotation.client}.pdf`;
+    doc.save(filename);
   };
 
-  // Compartilha via WhatsApp ou via Web Share API quando suportado
-  const handleShare = async () => {
-    const doc = generateDocument();
-    const blob = doc.output('blob');
-    const file = new File([blob], `Orçamento - ${quotation.company}.pdf`, {
-      type: 'application/pdf',
-    });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: `Orçamento - ${quotation.company}` });
-      } catch (err) {
-        console.error('Erro ao compartilhar:', err);
-      }
-    } else {
-      // Fallback para WhatsApp Web
-      const url = URL.createObjectURL(blob);
-      window.open(
-        `https://wa.me/?text=${encodeURIComponent(
-          `Orçamento - ${quotation.company}%0A%0AClique para baixar: ${url}`
-        )}`,
-        '_blank'
-      );
-    }
+  const handleShareWhatsApp = () => {
+    const doc = generatePDF();
+    const pdfBlob = doc.output('blob');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64data = reader.result?.toString().split(',')[1];
+      const text = `Orçamento - ${quotation.company}\nCliente: ${quotation.client}`;
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(whatsappUrl, '_blank');
+    };
+    reader.readAsDataURL(pdfBlob);
   };
+
+  // Only enable the buttons if we have the minimum required data
+  const isDisabled = !quotation.company || !quotation.client || quotation.materials.length === 0;
 
   return (
-    <div className="flex space-x-2">
-      {/* Botão para gerar/baixar PDF */}
+    <div className="mt-6 flex justify-center gap-4">
       <button
-        onClick={handleDownload}
-        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center transition duration-200"
+        onClick={handleDownloadPDF}
+        disabled={isDisabled}
+        className={`px-6 py-3 rounded-md flex items-center transition duration-200 ${
+          isDisabled
+            ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+            : 'bg-red-600 hover:bg-red-700 text-white shadow-md'
+        }`}
       >
-        <FilePdf className="h-5 w-5 mr-2" />
-        Gerar PDF
+        <FilePdf className="h-6 w-6 mr-2" />
+        Gerar Orçamento PDF
       </button>
 
-      {/* Botão para compartilhar */}
       <button
-        onClick={handleShare}
-        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center transition duration-200"
+        onClick={handleShareWhatsApp}
+        disabled={isDisabled}
+        className={`px-6 py-3 rounded-md flex items-center transition duration-200 ${
+          isDisabled
+            ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+            : 'bg-green-600 hover:bg-green-700 text-white shadow-md'
+        }`}
       >
-        <Share2 className="h-5 w-5 mr-2" />
-        Compartilhar
+        <Share2 className="h-6 w-6 mr-2" />
+        Compartilhar via WhatsApp
       </button>
     </div>
   );
