@@ -6,17 +6,17 @@ import { MaterialType } from '../types';
 
 const MaterialList: React.FC = () => {
   const { quotation, deleteMaterial } = useQuotation();
-  
+
   // Group materials by type
   const groupedMaterials = quotation.materials.reduce((acc, material) => {
     if (!acc[material.type]) acc[material.type] = [];
     acc[material.type].push(material);
     return acc;
   }, {} as Record<MaterialType, typeof quotation.materials>);
-  
+
   // Sort types alphabetically
   const sortedTypes = Object.keys(groupedMaterials).sort() as MaterialType[];
-  
+
   // Calculate total
   const total = quotation.materials.reduce(
     (sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity),
@@ -78,7 +78,7 @@ const MaterialList: React.FC = () => {
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{`${netW} x ${netH}`}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{material.quantity}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900">{formatCurrency(calculateTotal(material.pricePerUnit, material.quantity))}</td>
-                        <td className="px-4 py-3 text-sm text-slate-500 max-w-[200px] truncate">{material.details || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-slate-500 max-w-[200px] truncate">{material.details || "-"}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                           <button onClick={() => handleEdit(material.id)} className="text-indigo-600 hover:text-indigo-900 mr-3 transition" title="Editar">
                             <Edit className="h-4 w-4" />
