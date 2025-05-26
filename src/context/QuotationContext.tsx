@@ -36,10 +36,6 @@ const initialQuotation: QuotationData = {
   installments: 1,
   bankDetails: defaultBankDetails,
   showBankDetails: false,
-  showDefaultMeasure: false,
-  defaultMeasureMessage: `Obs: Medida padrão considerada 2,85 x 1,85 apenas para visualização do pedido, podendo variar para mais ou para menos.
-
-O valor final será baseado no romaenio oficial com medida real liquida de cada chapa.`,
   validUntil: getDefaultValidityDate(),
   createdAt: new Date(),
 };
@@ -82,21 +78,25 @@ export const QuotationProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   return (
-    <QuotationContext.Provider value={{
-      quotation,
-      updateQuotation,
-      addMaterial,
-      updateMaterial,
-      deleteMaterial,
-      resetQuotation,
-    }}>
+    <QuotationContext.Provider
+      value={{
+        quotation,
+        updateQuotation,
+        addMaterial,
+        updateMaterial,
+        deleteMaterial,
+        resetQuotation,
+      }}
+    >
       {children}
     </QuotationContext.Provider>
   );
 };
 
-export const useQuotation = () => {
+export const useQuotation = (): QuotationContextType => {
   const context = useContext(QuotationContext);
-  if (!context) throw new Error('useQuotation must be used within QuotationProvider');
+  if (context === undefined) {
+    throw new Error('useQuotation must be used within a QuotationProvider');
+  }
   return context;
 };
