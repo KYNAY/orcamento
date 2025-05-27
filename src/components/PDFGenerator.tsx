@@ -55,7 +55,7 @@ const PDFGenerator: React.FC = () => {
       headStyles: { fillColor: [230, 230, 230], textColor: 20, fontStyle: 'bold' },
       columnStyles: {
         0: { cellWidth: 60 },  // Material
-        1: { cellWidth: 25 },  // Preço/
+        1: { cellWidth: 25 },  // Preço/m²
         2: { cellWidth: 25 },  // Área
         3: { cellWidth: 40 },  // Medida líquida
         4: { cellWidth: 15 },  // Qtd
@@ -73,7 +73,8 @@ const PDFGenerator: React.FC = () => {
     doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
     doc.text(`Valor Total: ${formatCurrency(totalValor)}`, 15, finalY + 10);
 
-    const payY = finalY +  twenty;
+    // Corrigido undefined 'twenty'
+    const payY = finalY + 20;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(12);
     doc.text(`Forma de Pagamento: ${quotation.paymentMethod}`, 15, payY);
 
