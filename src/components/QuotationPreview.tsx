@@ -115,8 +115,8 @@ const QuotationPreview: React.FC = () => {
 
           {quotation.showDefaultMeasure && (
             <div className="mt-4 text-sm italic text-slate-500 border-t pt-4">
-              <p>Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo varier para mais ou para menos.</p>
-              <p>O valor final será baseado no ramenio oficial com medida real líquida de cada chapa.</p>
+              <p>Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.</p>
+              <p>O valor final será baseado no ramenio oficial com medida real líququida de cada chapa.</p>
             </div>
           )}
         </div>
