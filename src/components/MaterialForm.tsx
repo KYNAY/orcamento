@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
 import React, { useState, useEffect } from 'react';
 import { useQuotation } from '../context/QuotationContext';
 import { MaterialType, FinishingType } from '../types';
 import { PlusCircle } from 'lucide-react';
 
 const MaterialForm: React.FC = () => {
-  const { addMaterial } = useQuotation();
+  const {
+    quotation,
+    addMaterial,
+    updateMaterial,
+    editingMaterialId,
+    setEditingMaterialId,
+  } = useQuotation();
   
   const [name, setName] = useState('');
   const [type, setType] = useState<MaterialType>(MaterialType.GRANITE);
@@ -17,31 +22,56 @@ const MaterialForm: React.FC = () => {
   const [finishing, setFinishing] = useState<FinishingType>(FinishingType.POLISHED);
   const [showStandardMessage, setShowStandardMessage] = useState(true);
 
+  // Preenche formulário ao editar
+  useEffect(() => {
+    if (editingMaterialId) {
+      const material = quotation.materials.find(m => m.id === editingMaterialId);
+      if (material) {
+        setName(material.name);
+        setType(material.type);
+        setPricePerUnit(material.pricePerUnit);
+        setQuantity(material.quantity.toString());
+        setDetails(material.details);
+        setWidth(material.dimensions.width.toString());
+        setHeight(material.dimensions.height.toString());
+        setFinishing(material.finishing);
+        setShowStandardMessage(material.showStandardMessage);
+      }
+    }
+  }, [editingMaterialId, quotation.materials]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Convert dimensions to numbers, use default if empty
+    // Converte dimensões para números, usa padrão se vazio
     const numWidth = width ? parseFloat(width) : 2.90;
     const numHeight = height ? parseFloat(height) : 1.90;
     
-    // Calculate net dimensions (subtract 5cm from each dimension)
-    const netWidth = numWidth - 0.05;
-    const netHeight = numHeight - 0.05;
-    
-    addMaterial({
-      name,
-      type,
-      pricePerUnit,
-      quantity: parseInt(quantity) || 1,
-      details,
-      dimensions: {
-        width: numWidth,
-        height: numHeight,
-      },
-      finishing,
-      showStandardMessage,
-    });
-    
+    if (editingMaterialId) {
+      updateMaterial(editingMaterialId, {
+        name,
+        type,
+        pricePerUnit,
+        quantity: parseInt(quantity) || 1,
+        details,
+        dimensions: { width: numWidth, height: numHeight },
+        finishing,
+        showStandardMessage,
+      });
+      setEditingMaterialId(null);
+    } else {
+      addMaterial({
+        name,
+        type,
+        pricePerUnit,
+        quantity: parseInt(quantity) || 1,
+        details,
+        dimensions: { width: numWidth, height: numHeight },
+        finishing,
+        showStandardMessage,
+      });
+    }
+
     // Reset form
     setName('');
     setType(MaterialType.GRANITE);
@@ -57,7 +87,7 @@ const MaterialForm: React.FC = () => {
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
       <h2 className="text-xl font-semibold mb-4 text-slate-800 border-b pb-2">
-        Adicionar Material
+        {editingMaterialId ? 'Editar Material' : 'Adicionar Material'}
       </h2>
       
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -213,7 +243,7 @@ const MaterialForm: React.FC = () => {
             className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md flex items-center transition duration-200 shadow-md"
           >
             <PlusCircle className="h-5 w-5 mr-2" />
-            Adicionar Material
+            {editingMaterialId ? 'Salvar Alterações' : 'Adicionar Material'}
           </button>
         </div>
       </form>
