@@ -33,23 +33,22 @@ const PDFGenerator: React.FC = () => {
     doc.text(`Vendedor: ${quotation.seller}`, 15, 40);
     doc.text(`Cliente: ${quotation.client}`, 15, 45);
 
+    // Definição de posições X para colunas
+    const colX = [15, 80, 200, 240, 280, 310, 340];
     // Cabeçalho da tabela
     let yPos = 60;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     ['Acabamento', 'Material', 'Preço/m²', 'Área (m²)', 'Medida líquida', 'Qtd', 'Total']
-      .forEach((h, i) => {
-        doc.text(h, 15 + i * 25, yPos);
-      });
+      .forEach((h, i) => doc.text(h, colX[i], yPos));
 
     // Linhas de materiais
     doc.setFont('helvetica', 'normal');
     sortedTypes.forEach(type => {
       yPos += 8;
-      // Nome do tipo
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
-      doc.text(type, 15, yPos);
+      doc.text(type, colX[0], yPos);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
 
@@ -62,24 +61,32 @@ const PDFGenerator: React.FC = () => {
         const netW = (m.dimensions.width - 0.05).toFixed(2);
         const netH = (m.dimensions.height - 0.05).toFixed(2);
         const netArea = (m.dimensions.width - 0.05) * (m.dimensions.height - 0.05) * m.quantity;
-        const row = [
-          m.finishing,
-          m.name,
+
+        // Quebra automática do texto de material
+        const matText = `${m.finishing} ${m.name}`;
+        const matWidth = colX[2] - colX[1] - 5;
+        const matLines = doc.splitTextToSize(matText, matWidth);
+        doc.text(matLines, colX[1], yPos);
+
+        // Imprime as demais colunas
+        const other = [
           formatCurrency(m.pricePerUnit),
           netArea.toFixed(2),
           `${netW} x ${netH}`,
           String(m.quantity),
-          formatCurrency(calculateTotal(m.pricePerUnit, m.quantity))
+          formatCurrency(calculateTotal(m.pricePerUnit, m.quantity)),
         ];
-        row.forEach((txt, i) => {
-          doc.text(txt, 15 + i * 25, yPos);
+        other.forEach((txt, j) => {
+          doc.text(txt, colX[j + 2], yPos);
         });
       });
     });
 
     // Total geral e forma de pagamento
-    const grandTotal = quotation.materials
-      .reduce((sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity), 0);
+    const grandTotal = quotation.materials.reduce(
+      (sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity),
+      0
+    );
 
     yPos += 12;
     if (yPos > 275) {
@@ -89,24 +96,24 @@ const PDFGenerator: React.FC = () => {
     // Quantidade total de chapas
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Quantidade total de chapas: ${totalChapas}`, 15, yPos);
+    doc.text(`Quantidade total de chapas: ${totalChapas}`, colX[0], yPos);
     yPos += 8;
 
     // Valor total
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-    doc.text(`Valor Total: ${formatCurrency(grandTotal)}`, 130, yPos);
+    doc.text(`Valor Total: ${formatCurrency(grandTotal)}`, colX[5], yPos);
     yPos += 8;
 
     // Forma de pagamento e parcelas
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Forma de Pagamento: ${quotation.paymentMethod}`, 15, yPos);
+    doc.text(`Forma de Pagamento: ${quotation.paymentMethod}`, colX[0], yPos);
     if (quotation.installments && quotation.installments > 1) {
       yPos += 6;
       doc.text(
         `${quotation.installments}x de ${formatCurrency(grandTotal / quotation.installments)}`,
-        15,
+        colX[0],
         yPos
       );
     }
