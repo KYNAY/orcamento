@@ -33,8 +33,9 @@ const PDFGenerator: React.FC = () => {
     doc.text(`Vendedor: ${quotation.seller}`, 15, 40);
     doc.text(`Cliente: ${quotation.client}`, 15, 45);
 
-    // Definição de posições X para colunas
-    const colX = [15, 80, 200, 240, 280, 310, 340];
+    // Define posições X fixas para colunas
+    const colX = [15, 65, 125, 155, 185, 200, 220];
+
     // Cabeçalho da tabela
     let yPos = 60;
     doc.setFont('helvetica', 'bold');
@@ -46,6 +47,7 @@ const PDFGenerator: React.FC = () => {
     doc.setFont('helvetica', 'normal');
     sortedTypes.forEach(type => {
       yPos += 8;
+      // Nome do tipo
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.text(type, colX[0], yPos);
