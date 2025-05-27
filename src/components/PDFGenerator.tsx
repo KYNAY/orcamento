@@ -23,54 +23,57 @@ const PDFGenerator: React.FC = () => {
     const totalChapas = quotation.materials.reduce((sum, m) => sum + m.quantity, 0);
 
     // Cabeçalho
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
     doc.text(`Orçamento - ${quotation.company}`, 15, 20);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
     doc.text(`Data: ${formatDate(new Date())}`, 15, 30);
     doc.text(`Validade: ${formatDate(quotation.validUntil)}`, 15, 35);
     doc.text(`Vendedor: ${quotation.seller}`, 15, 40);
     doc.text(`Cliente: ${quotation.client}`, 15, 45);
 
-    // Define posições X ajustadas para colunas
-    const colX = [15, 70, 120, 150, 180, 195, 210];
     // Cabeçalho da tabela
     let yPos = 60;
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-    ['Acabamento','Material','Preço/m²','Área (m²)','Medida líquida','Qtd','Total']
-      .forEach((h, i) => doc.text(h, colX[i], yPos));
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    ['Acabamento', 'Material', 'Preço/m²', 'Área (m²)', 'Medida líquida', 'Qtd', 'Total']
+      .forEach((h, i) => {
+        doc.text(h, 15 + i * 25, yPos);
+      });
 
     // Linhas de materiais
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
     sortedTypes.forEach(type => {
       yPos += 8;
-      // Tipo de material
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
-      doc.text(type, colX[0], yPos);
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+      // Nome do tipo
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(type, 15, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
 
       grouped[type].forEach(m => {
         yPos += 6;
-        if (yPos > 275) { doc.addPage(); yPos = 20; }
-        // Calcula dimensões
+        if (yPos > 275) {
+          doc.addPage();
+          yPos = 20;
+        }
         const netW = (m.dimensions.width - 0.05).toFixed(2);
         const netH = (m.dimensions.height - 0.05).toFixed(2);
         const netArea = (m.dimensions.width - 0.05) * (m.dimensions.height - 0.05) * m.quantity;
-
-        // Quebra automática do nome do material
-        const matText = `${m.finishing} ${m.name}`;
-        const matWidth = colX[2] - colX[1] - 5;
-        const matLines = doc.splitTextToSize(matText, matWidth);
-        doc.text(matLines, colX[1], yPos);
-
-        // Outras colunas
-        const values = [
+        const row = [
+          m.finishing,
+          m.name,
           formatCurrency(m.pricePerUnit),
           netArea.toFixed(2),
           `${netW} x ${netH}`,
           String(m.quantity),
           formatCurrency(calculateTotal(m.pricePerUnit, m.quantity))
         ];
-        values.forEach((txt, j) => doc.text(txt, colX[j + 2], yPos));
+        row.forEach((txt, i) => {
+          doc.text(txt, 15 + i * 25, yPos);
+        });
       });
     });
 
@@ -79,42 +82,63 @@ const PDFGenerator: React.FC = () => {
       .reduce((sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity), 0);
 
     yPos += 12;
-    if (yPos > 275) { doc.addPage(); yPos = 20; }
+    if (yPos > 275) {
+      doc.addPage();
+      yPos = 20;
+    }
     // Quantidade total de chapas
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-    doc.text(`Quantidade total de chapas: ${totalChapas}`, colX[0], yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Quantidade total de chapas: ${totalChapas}`, 15, yPos);
     yPos += 8;
 
-    // Valor Total
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
-    doc.text(`Valor Total: ${formatCurrency(grandTotal)}`, colX[5], yPos);
+    // Valor total
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text(`Valor Total: ${formatCurrency(grandTotal)}`, 130, yPos);
     yPos += 8;
 
-    // Forma de Pagamento
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-    doc.text(`Forma de Pagamento: ${quotation.paymentMethod}`, colX[0], yPos);
+    // Forma de pagamento e parcelas
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Forma de Pagamento: ${quotation.paymentMethod}`, 15, yPos);
     if (quotation.installments && quotation.installments > 1) {
       yPos += 6;
       doc.text(
         `${quotation.installments}x de ${formatCurrency(grandTotal / quotation.installments)}`,
-        colX[0], yPos
+        15,
+        yPos
       );
     }
 
     return doc;
   };
 
-  const handleDownload = () => generatePDF().save(`Orçamento ${quotation.company} - ${quotation.client}.pdf`);
-  const handleShare = async () => { const blobUrl = generatePDF().output('bloburl'); /* share logic */ };
+  const handleDownload = () => {
+    generatePDF().save(`Orçamento ${quotation.company} - ${quotation.client}.pdf`);
+  };
+  const handleShare = async () => {
+    const blobUrl = generatePDF().output('bloburl');
+    // lógica de compartilhamento...
+  };
 
-  const disabled = !quotation.company || !quotation.client || quotation.materials.length === 0;
+  const disabled =
+    !quotation.company || !quotation.client || quotation.materials.length === 0;
 
   return (
     <div className="mt-6 flex justify-center gap-4">
-      <button onClick={handleDownload} disabled={disabled} className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50">
+      <button
+        onClick={handleDownload}
+        disabled={disabled}
+        className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+      >
         <FilePdf className="h-5 w-5 mr-2" /> Gerar PDF
       </button>
-      <button onClick={handleShare} disabled={disabled} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
+      <button
+        onClick={handleShare}
+        disabled={disabled}
+        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+      >
         <Share2 className="h-5 w-5 mr-2" /> Compartilhar
       </button>
     </div>
