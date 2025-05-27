@@ -16,6 +16,8 @@ interface QuotationContextType {
   updateMaterial: (id: string, material: Partial<Material>) => void;
   deleteMaterial: (id: string) => void;
   resetQuotation: () => void;
+  editingMaterialId: string | null;
+  setEditingMaterialId: (id: string | null) => void;
 }
 
 const defaultBankDetails: BankDetails = {
@@ -44,6 +46,7 @@ const QuotationContext = createContext<QuotationContextType | undefined>(undefin
 
 export const QuotationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [quotation, setQuotation] = useState<QuotationData>(initialQuotation);
+  const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null); // 🔧 NOVO
 
   const updateQuotation = (data: Partial<QuotationData>) => {
     setQuotation(prev => ({ ...prev, ...data }));
@@ -86,6 +89,8 @@ export const QuotationProvider: React.FC<{ children: ReactNode }> = ({ children 
         updateMaterial,
         deleteMaterial,
         resetQuotation,
+        editingMaterialId,        // 🔧 NOVO
+        setEditingMaterialId,     // 🔧 NOVO
       }}
     >
       {children}
