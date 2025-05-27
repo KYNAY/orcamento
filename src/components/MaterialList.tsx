@@ -5,7 +5,7 @@ import { Edit, Trash2 } from 'lucide-react';
 import { MaterialType } from '../types';
 
 const MaterialList: React.FC = () => {
-  const { quotation, deleteMaterial } = useQuotation();
+  const { quotation, deleteMaterial, setEditingMaterialId } = useQuotation();
 
   // Group materials by type
   const groupedMaterials = quotation.materials.reduce((acc, material) => {
@@ -38,8 +38,7 @@ const MaterialList: React.FC = () => {
   }
 
   const handleEdit = (id: string) => {
-    console.log('Editar material', id);
-    // TODO: implementar lógica de edição
+    setEditingMaterialId(id);
   };
 
   return (
@@ -67,14 +66,14 @@ const MaterialList: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-slate-200">
                   {groupedMaterials[type].map((material) => {
-                    const grossArea = material.dimensions.width * material.dimensions.height * material.quantity;
+                    const netArea = (material.dimensions.width - 0.05) * (material.dimensions.height - 0.05) * material.quantity;
                     const netW = (material.dimensions.width - 0.05).toFixed(2);
                     const netH = (material.dimensions.height - 0.05).toFixed(2);
                     return (
                       <tr key={material.id} className="hover:bg-slate-50 transition">
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{material.name}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{formatCurrency(material.pricePerUnit)}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{grossArea.toFixed(2)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{netArea.toFixed(2)}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{`${netW} x ${netH}`}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{material.quantity}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900">{formatCurrency(calculateTotal(material.pricePerUnit, material.quantity))}</td>
@@ -111,3 +110,4 @@ const MaterialList: React.FC = () => {
 };
 
 export default MaterialList;
+
