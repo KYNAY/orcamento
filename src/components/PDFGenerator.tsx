@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuotation } from '../context/QuotationContext';
 import { jsPDF } from 'jspdf';
-import { formatCurrency, formatDate, calculateTotal } from '../utils/formatters';
+import { formatCurrency, formatDate } from '../utils/formatters';
 import { MaterialType } from '../types';
 import { File as FilePdf, Share2 } from 'lucide-react';
 
@@ -18,10 +18,15 @@ const PDFGenerator: React.FC = () => {
       return acc;
     }, {} as Record<MaterialType, typeof quotation.materials>);
     const sortedTypes = Object.keys(grouped).sort() as MaterialType[];
-    const total = quotation.materials.reduce(
-      (sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity),
-      0
-    );
+
+    // Total geral usando área líquida
+    const total = quotation.materials.reduce((sum, m) => {
+      const netArea =
+        (m.dimensions.width  - 0.05) *
+        (m.dimensions.height - 0.05) *
+        m.quantity;
+      return sum + m.pricePerUnit * netArea;
+    }, 0);
 
     // Cabeçalho
     doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
@@ -61,7 +66,7 @@ const PDFGenerator: React.FC = () => {
           netArea.toFixed(2),
           `${netW} x ${netH}`,
           String(m.quantity),
-          formatCurrency(calculateTotal(m.pricePerUnit, m.quantity)),
+          formatCurrency(m.pricePerUnit * netArea),
           m.details || '-'
         ].forEach((text, i) => {
           doc.text(text, 15 + i * 25, yPos);
