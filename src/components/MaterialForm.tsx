@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuotation } from '../context/QuotationContext';
 import { MaterialType, FinishingType } from '../types';
 import { PlusCircle } from 'lucide-react';
