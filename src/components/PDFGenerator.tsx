@@ -19,6 +19,9 @@ const PDFGenerator: React.FC = () => {
     }, {} as Record<MaterialType, typeof quotation.materials>);
     const sortedTypes = Object.keys(grouped).sort() as MaterialType[];
 
+    // Calcula total de chapas
+    const totalChapas = quotation.materials.reduce((sum, m) => sum + m.quantity, 0);
+
     // Cabeçalho
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
@@ -43,6 +46,7 @@ const PDFGenerator: React.FC = () => {
     doc.setFont('helvetica', 'normal');
     sortedTypes.forEach(type => {
       yPos += 8;
+      // Nome do tipo
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.text(type, 15, yPos);
@@ -73,18 +77,28 @@ const PDFGenerator: React.FC = () => {
       });
     });
 
-    // Total e pagamento
+    // Total geral e forma de pagamento
     const grandTotal = quotation.materials
       .reduce((sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity), 0);
+
     yPos += 12;
     if (yPos > 275) {
       doc.addPage();
       yPos = 20;
     }
+    // Quantidade total de chapas
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Quantidade total de chapas: ${totalChapas}`, 15, yPos);
+    yPos += 8;
+
+    // Valor total
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.text(`Valor Total: ${formatCurrency(grandTotal)}`, 130, yPos);
     yPos += 8;
+
+    // Forma de pagamento e parcelas
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.text(`Forma de Pagamento: ${quotation.paymentMethod}`, 15, yPos);
@@ -104,7 +118,7 @@ const PDFGenerator: React.FC = () => {
     generatePDF().save(`Orçamento ${quotation.company} - ${quotation.client}.pdf`);
   };
   const handleShare = async () => {
-    const blob = generatePDF().output('bloburl');
+    const blobUrl = generatePDF().output('bloburl');
     // lógica de compartilhamento...
   };
 
