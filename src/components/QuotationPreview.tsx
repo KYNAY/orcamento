@@ -69,14 +69,18 @@ const QuotationPreview: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-slate-200">
                     {grouped[type].map(material => {
-                      const grossArea = material.dimensions.width * material.dimensions.height * material.quantity;
+                      cconst netArea =
+  (material.dimensions.width  - 0.05) *
+  (material.dimensions.height - 0.05) *
+  material.quantity;
+
                       const netW = (material.dimensions.width - 0.05).toFixed(2);
                       const netH = (material.dimensions.height - 0.05).toFixed(2);
                       return (
                         <tr key={material.id}>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{material.name}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{formatCurrency(material.pricePerUnit)}</td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{grossArea.toFixed(2)}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{netArea.toFixed(2)}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{`${netW} x ${netH}`}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{material.quantity}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-slate-900">{formatCurrency(calculateTotal(material.pricePerUnit, material.quantity))}</td>
