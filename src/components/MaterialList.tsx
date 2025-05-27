@@ -1,27 +1,30 @@
 import React from 'react';
 import { useQuotation } from '../context/QuotationContext';
-import { formatCurrency, calculateTotal } from '../utils/formatters';
+import { formatCurrency } from '../utils/formatters';
 import { Edit, Trash2 } from 'lucide-react';
 import { MaterialType } from '../types';
 
 const MaterialList: React.FC = () => {
   const { quotation, deleteMaterial, setEditingMaterialId } = useQuotation();
 
-  // Group materials by type
+  // Agrupa materiais por tipo
   const groupedMaterials = quotation.materials.reduce((acc, material) => {
     if (!acc[material.type]) acc[material.type] = [];
     acc[material.type].push(material);
     return acc;
   }, {} as Record<MaterialType, typeof quotation.materials>);
 
-  // Sort types alphabetically
+  // Tipos ordenados
   const sortedTypes = Object.keys(groupedMaterials).sort() as MaterialType[];
 
-  // Calculate total
-  const total = quotation.materials.reduce(
-    (sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity),
-    0
-  );
+  // Total geral, usando área líquida
+  const total = quotation.materials.reduce((sum, material) => {
+    const netArea =
+      (material.dimensions.width  - 0.05) *
+      (material.dimensions.height - 0.05) *
+      material.quantity;
+    return sum + material.pricePerUnit * netArea;
+  }, 0);
 
   if (quotation.materials.length === 0) {
     return (
@@ -54,35 +57,78 @@ const MaterialList: React.FC = () => {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Material</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Preço/m²</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Área (m²)</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Medida líquida (m x m)</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Qtd</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Total</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Detalhes</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Ações</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Material
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Preço/m²
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Área (m²)
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Medida líquida (m x m)
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Qtd
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Total
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Detalhes
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Ações
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-slate-200">
                   {groupedMaterials[type].map((material) => {
-                    const netArea = (material.dimensions.width - 0.05) * (material.dimensions.height - 0.05) * material.quantity;
-                    const netW = (material.dimensions.width - 0.05).toFixed(2);
+                    // Calcula área líquida
+                    const netArea =
+                      (material.dimensions.width  - 0.05) *
+                      (material.dimensions.height - 0.05) *
+                      material.quantity;
+                    const netW = (material.dimensions.width  - 0.05).toFixed(2);
                     const netH = (material.dimensions.height - 0.05).toFixed(2);
+
                     return (
                       <tr key={material.id} className="hover:bg-slate-50 transition">
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{material.name}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{formatCurrency(material.pricePerUnit)}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{netArea.toFixed(2)}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{`${netW} x ${netH}`}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{material.quantity}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900">{formatCurrency(calculateTotal(material.pricePerUnit, material.quantity))}</td>
-                        <td className="px-4 py-3 text-sm text-slate-500 max-w-[200px] truncate">{material.details || "-"}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">
+                          {material.name}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">
+                          {formatCurrency(material.pricePerUnit)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">
+                          {netArea.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">
+                          {`${netW} x ${netH}`}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900">
+                          {material.quantity}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900">
+                          {formatCurrency(material.pricePerUnit * netArea)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-500 max-w-[200px] truncate">
+                          {material.details || "-"}
+                        </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                          <button onClick={() => handleEdit(material.id)} className="text-indigo-600 hover:text-indigo-900 mr-3 transition" title="Editar">
+                          <button
+                            onClick={() => handleEdit(material.id)}
+                            className="text-indigo-600 hover:text-indigo-900 mr-3 transition"
+                            title="Editar"
+                          >
                             <Edit className="h-4 w-4" />
                           </button>
-                          <button onClick={() => deleteMaterial(material.id)} className="text-red-600 hover:text-red-900 transition" title="Excluir">
+                          <button
+                            onClick={() => deleteMaterial(material.id)}
+                            className="text-red-600 hover:text-red-900 transition"
+                            title="Excluir"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </td>
@@ -96,13 +142,21 @@ const MaterialList: React.FC = () => {
         ))}
       </div>
       <div className="mt-6 flex justify-end border-t pt-4">
-        <div className="text-xl font-bold text-slate-800">Total: {formatCurrency(total)}</div>
+        <div className="text-xl font-bold text-slate-800">
+          Total: {formatCurrency(total)}
+        </div>
       </div>
 
       {quotation.showDefaultMeasure && (
         <div className="mt-2 text-sm text-slate-500 italic">
-          <p>Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.</p>
-          <p>O valor final será baseado no ramenio oficial com medida real líquida de cada chapa.</p>
+          <p>
+            Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização
+            do pedido, podendo variar para mais ou para menos.
+          </p>
+          <p>
+            O valor final será baseado no ramenio oficial com medida real
+            líquida de cada chapa.
+          </p>
         </div>
       )}
     </div>
@@ -110,4 +164,3 @@ const MaterialList: React.FC = () => {
 };
 
 export default MaterialList;
-
