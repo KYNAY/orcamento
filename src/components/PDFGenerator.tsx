@@ -10,9 +10,46 @@ const PDFGenerator: React.FC = () => {
 
   const generatePDF = () => {
     const doc = new jsPDF();
-    // Agrupa e ordena
+
+    // Agrupa e ordena materiais
     const grouped = quotation.materials.reduce((acc, m) => {
-      if (!acc[
+      if (!acc[m.type]) acc[m.type] = [];
+      acc[m.type].push(m);
+      return acc;
+    }, {} as Record<MaterialType, typeof quotation.materials>);
+    const sortedTypes = Object.keys(grouped).sort() as MaterialType[];
+    const total = quotation.materials.reduce((sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity), 0);
+
+    // Cabeçalho
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
+    doc.text(`Orçamento - ${quotation.company}`, 15, 20);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    doc.text(`Data: ${formatDate(new Date())}`, 15, 30);
+    doc.text(`Validade: ${formatDate(quotation.validUntil)}`, 15, 35);
+
+    // Tabela de materiais
+    let yPos = 70;
+    sortedTypes.forEach((type) => {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+      doc.text(type, 15, yPos);
+      yPos += 6;
+
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+      ['Material', 'Preço/m²', 'Área (m²)', 'Medida líquida', 'Qtd', 'Total', 'Detalhes'].forEach((header, i) => {
+        doc.text(header, 15 + i * 25, yPos);
+      });
+      yPos += 5;
+
+      doc.setFont('helvetica', 'normal');
+      grouped[type].forEach((m) => {
+        if (yPos > 270) { doc.addPage(); yPos = 20; }
+
+        // Cálculo da área líquida
+        const netArea = (m.dimensions.width - 0.05) * (m.dimensions.height - 0.05) * m.quantity;
+        const netW = (m.dimensions.width - 0.05).toFixed(2);
+        const netH = (m.dimensions.height - 0.05).toFixed(2);
+
+        [
           m.name,
           formatCurrency(m.pricePerUnit),
           netArea.toFixed(2),
@@ -66,9 +103,17 @@ const PDFGenerator: React.FC = () => {
     // Observação de medida padrão (condicional)
     if (quotation.showDefaultMeasure) {
       doc.setFont('helvetica', 'italic'); doc.setFontSize(8);
-      doc.text('Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.', 15, yPos);
+      doc.text(
+        'Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.',
+        15,
+        yPos
+      );
       yPos += 4;
-      doc.text('O valor final será baseado no ramenio oficial com medida real líquida de cada chapa.', 15, yPos);
+      doc.text(
+        'O valor final será baseado no ramenio oficial com medida real líquida de cada chapa.',
+        15,
+        yPos
+      );
     }
 
     return doc;
@@ -83,7 +128,10 @@ const PDFGenerator: React.FC = () => {
     const doc = generatePDF();
     const blob = doc.output('blob');
     const filename = `Orçamento ${quotation.company} - ${quotation.client}.pdf`;
-    if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'application/pdf' })] })) {
+    if (
+      navigator.canShare &&
+      navigator.canShare({ files: [new File([blob], filename, { type: 'application/pdf' })] })
+    ) {
       await navigator.share({ files: [new File([blob], filename, { type: 'application/pdf' })], text: `Orçamento - ${quotation.company}\nCliente: ${quotation.client}` });
     } else {
       const url = URL.createObjectURL(blob);
@@ -98,7 +146,8 @@ const PDFGenerator: React.FC = () => {
       <button
         onClick={handleDownloadPDF}
         disabled={isDisabled}
-        className={`px-6 py-3 rounded-md flex items-center transition duration-200 ${isDisabled ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white shadow-md'}`}
+        className={`px-6 py-3 rounded-md flex items-center transition duration-200 ${
+isDisabled ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white shadow-md'}
       >
         <FilePdf className="h-6 w-6 mr-2" />
         Gerar Orçamento PDF
@@ -107,7 +156,8 @@ const PDFGenerator: React.FC = () => {
       <button
         onClick={handleShareWhatsApp}
         disabled={isDisabled}
-        className={`px-6 py-3 rounded-md flex items-center transition duration-200 ${isDisabled ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white shadow-md'}`}
+        className={`px-6 py-3 rounded-md flex items-center transition duration-200 ${
+isDisabled ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white shadow-md'}
       >
         <Share2 className="h-6 w-6 mr-2" />
         Compartilhar via WhatsApp
@@ -117,4 +167,3 @@ const PDFGenerator: React.FC = () => {
 };
 
 export default PDFGenerator;
-
