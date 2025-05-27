@@ -9,7 +9,7 @@ const PDFGenerator: React.FC = () => {
   const { quotation } = useQuotation();
 
   const generatePDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: 'landscape' });
 
     // Agrupa e ordena materiais
     const grouped = quotation.materials.reduce((acc, m) => {
@@ -19,7 +19,7 @@ const PDFGenerator: React.FC = () => {
     }, {} as Record<MaterialType, typeof quotation.materials>);
     const sortedTypes = Object.keys(grouped).sort() as MaterialType[];
 
-    // Total geral usando área líquida
+    // Calcula total geral usando área líquida
     const total = quotation.materials.reduce((sum, m) => {
       const netArea =
         (m.dimensions.width  - 0.05) *
@@ -32,32 +32,34 @@ const PDFGenerator: React.FC = () => {
     doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
     doc.text(`Orçamento - ${quotation.company}`, 15, 20);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-    doc.text(`Data: ${formatDate(new Date())}`, 15, 30);
-    doc.text(`Validade: ${formatDate(quotation.validUntil)}`, 15, 35);
+    doc.text(`Cliente: ${quotation.client}`, 15, 28);
+    doc.text(`Data: ${formatDate(new Date())}`, 150, 20);
+    doc.text(`Validade: ${formatDate(quotation.validUntil)}`, 150, 28);
 
-    // Tabela de materiais
-    let yPos = 70;
+    // Inicia tabela
+    let yPos = 50;
     sortedTypes.forEach((type) => {
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
       doc.text(type, 15, yPos);
-      yPos += 6;
+      yPos += 8;
 
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-      ['Material', 'Preço/m²', 'Área (m²)', 'Medida líquida', 'Qtd', 'Total', 'Detalhes'].forEach((header, i) => {
-        doc.text(header, 15 + i * 25, yPos);
-      });
-      yPos += 5;
+      ['Material', 'Preço/m²', 'Área (m²)', 'Medida líquida', 'Qtd', 'Total', 'Detalhes']
+        .forEach((header, i) => {
+          doc.text(header, 15 + i * 30, yPos);
+        });
+      yPos += 6;
 
       doc.setFont('helvetica', 'normal');
       grouped[type].forEach((m) => {
-        if (yPos > 270) { doc.addPage(); yPos = 20; }
+        if (yPos > 180) { doc.addPage({ orientation: 'landscape' }); yPos = 20; }
 
         // Cálculo da área líquida
         const netArea =
           (m.dimensions.width  - 0.05) *
           (m.dimensions.height - 0.05) *
           m.quantity;
-        const netW = (m.dimensions.width - 0.05).toFixed(2);
+        const netW = (m.dimensions.width  - 0.05).toFixed(2);
         const netH = (m.dimensions.height - 0.05).toFixed(2);
 
         [
@@ -69,34 +71,45 @@ const PDFGenerator: React.FC = () => {
           formatCurrency(m.pricePerUnit * netArea),
           m.details || '-'
         ].forEach((text, i) => {
-          doc.text(text, 15 + i * 25, yPos);
+          doc.text(text, 15 + i * 30, yPos);
         });
         yPos += 6;
       });
-      yPos += 4;
+      yPos += 8;
     });
 
+    // Exibe total de chapas antes do total geral
+    const totalSheets = quotation.materials.reduce((sum, m) => sum + m.quantity, 0);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    if (yPos > 180) { doc.addPage({ orientation: 'landscape' }); yPos = 20; }
+    doc.text(`Total de Chapas: ${totalSheets}`, 15, yPos);
+    yPos += 8;
+
     // Total geral
-    if (yPos > 250) { doc.addPage(); yPos = 20; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
-    doc.text(`Valor Total: ${formatCurrency(total)}`, 130, yPos);
-    yPos += 10;
+    doc.text(`Valor Total: ${formatCurrency(total)}`, 15, yPos);
+    yPos += 12;
 
     // Forma de pagamento
     doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
     doc.text(`Forma de Pagamento: ${quotation.paymentMethod}`, 15, yPos);
     yPos += 6;
     if (quotation.installments && quotation.installments > 1) {
-      doc.text(`${quotation.installments}x de ${formatCurrency(total / quotation.installments)}`, 15, yPos);
+      doc.text(
+        `${quotation.installments}x de ${formatCurrency(total / quotation.installments)}`,
+        15,
+        yPos
+      );
       yPos += 6;
     }
 
     // Dados bancários
     if (quotation.showBankDetails && quotation.bankDetails) {
-      yPos += 4;
-      doc.setFont('helvetica', 'bold'); doc.text('Dados para Depósito:', 15, yPos);
       yPos += 6;
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+      doc.text('Dados para Depósito:', 15, yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
       [
         `Banco: ${quotation.bankDetails.bank}`,
         `Agência: ${quotation.bankDetails.agency}`,
@@ -108,23 +121,6 @@ const PDFGenerator: React.FC = () => {
         doc.text(line, 15, yPos);
         yPos += 5;
       });
-      yPos += 10;
-    }
-
-    // Observação de medida padrão (condicional)
-    if (quotation.showDefaultMeasure) {
-      doc.setFont('helvetica', 'italic'); doc.setFontSize(8);
-      doc.text(
-        'Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.',
-        15,
-        yPos
-      );
-      yPos += 4;
-      doc.text(
-        'O valor final será baseado no ramenio oficial com medida real líquida de cada chapa.',
-        15,
-        yPos
-      );
     }
 
     return doc;
