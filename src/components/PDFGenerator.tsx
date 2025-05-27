@@ -12,42 +12,10 @@ const PDFGenerator: React.FC = () => {
     const doc = new jsPDF();
     // Agrupa e ordena
     const grouped = quotation.materials.reduce((acc, m) => {
-      if (!acc[m.type]) acc[m.type] = [];
-      acc[m.type].push(m);
-      return acc;
-    }, {} as Record<MaterialType, typeof quotation.materials>);
-    const sortedTypes = Object.keys(grouped).sort() as MaterialType[];
-    const total = quotation.materials.reduce((sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity), 0);
-
-    // Cabeçalho
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
-    doc.text(`Orçamento - ${quotation.company}`, 15, 20);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-    doc.text(`Data: ${formatDate(new Date())}`, 15, 30);
-    doc.text(`Validade: ${formatDate(quotation.validUntil)}`, 15, 35);
-
-    // Tabela de materiais
-    let yPos = 70;
-    sortedTypes.forEach((type) => {
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
-      doc.text(type, 15, yPos); yPos += 6;
-
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-      ['Material', 'Preço/m²', 'Área (m²)', 'Medida líquida', 'Qtd', 'Total', 'Detalhes'].forEach((header, i) => {
-        doc.text(header, 15 + i * 25, yPos);
-      });
-      yPos += 5;
-
-      doc.setFont('helvetica', 'normal');
-      grouped[type].forEach((m) => {
-        if (yPos > 270) { doc.addPage(); yPos = 20; }
-        const grossArea = m.dimensions.width * m.dimensions.height * m.quantity;
-        const netW = (m.dimensions.width - 0.05).toFixed(2);
-        const netH = (m.dimensions.height - 0.05).toFixed(2);
-        [
+      if (!acc[
           m.name,
           formatCurrency(m.pricePerUnit),
-          grossArea.toFixed(2),
+          netArea.toFixed(2),
           `${netW} x ${netH}`,
           String(m.quantity),
           formatCurrency(calculateTotal(m.pricePerUnit, m.quantity)),
@@ -116,8 +84,7 @@ const PDFGenerator: React.FC = () => {
     const blob = doc.output('blob');
     const filename = `Orçamento ${quotation.company} - ${quotation.client}.pdf`;
     if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'application/pdf' })] })) {
-      await navigator.share({ files: [new File([blob], filename, { type: 'application/pdf' })], text: `Orçamento - ${quotation.company}
-Cliente: ${quotation.client}` });
+      await navigator.share({ files: [new File([blob], filename, { type: 'application/pdf' })], text: `Orçamento - ${quotation.company}\nCliente: ${quotation.client}` });
     } else {
       const url = URL.createObjectURL(blob);
       window.open(`https://wa.me/?text=${encodeURIComponent(url)}`, '_blank');
@@ -150,3 +117,4 @@ Cliente: ${quotation.client}` });
 };
 
 export default PDFGenerator;
+
