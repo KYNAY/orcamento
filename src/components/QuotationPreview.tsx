@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuotation } from '../context/QuotationContext';
-import { formatCurrency, formatDate, calculateTotal } from '../utils/formatters';
+import { formatCurrency, formatDate } from '../utils/formatters';
 import { MaterialType } from '../types';
 
 const QuotationPreview: React.FC = () => {
@@ -14,10 +14,14 @@ const QuotationPreview: React.FC = () => {
 
   const sortedTypes = Object.keys(grouped).sort() as MaterialType[];
 
-  const total = quotation.materials.reduce(
-    (sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity),
-    0
-  );
+  // Total geral usando área líquida
+  const total = quotation.materials.reduce((sum, m) => {
+    const netArea =
+      (m.dimensions.width  - 0.05) *
+      (m.dimensions.height - 0.05) *
+      m.quantity;
+    return sum + m.pricePerUnit * netArea;
+  }, 0);
 
   const installmentValue = quotation.installments && quotation.installments > 1
     ? formatCurrency(total / quotation.installments)
@@ -69,20 +73,22 @@ const QuotationPreview: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-slate-200">
                     {grouped[type].map(material => {
+                      // Cálculo da área líquida
                       const netArea =
                         (material.dimensions.width  - 0.05) *
                         (material.dimensions.height - 0.05) *
                         material.quantity;
-                      const netW = (material.dimensions.width - 0.05).toFixed(2);
+                      const netW = (material.dimensions.width  - 0.05).toFixed(2);
                       const netH = (material.dimensions.height - 0.05).toFixed(2);
+
                       return (
-                        <tr key={material.id} className="hover:bg-slate-50 transition">
+                        <tr key={material.id}>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{material.name}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{formatCurrency(material.pricePerUnit)}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{netArea.toFixed(2)}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{`${netW} x ${netH}`}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{material.quantity}</td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-slate-900">{formatCurrency(calculateTotal(material.pricePerUnit, material.quantity))}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-slate-900">{formatCurrency(material.pricePerUnit * netArea)}</td>
                           {grouped[type].some(m => m.details) && (
                             <td className="px-4 py-2 text-sm text-slate-500">{material.details || '-'}</td>
                           )}
