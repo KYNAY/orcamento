@@ -69,15 +69,14 @@ const QuotationPreview: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-slate-200">
                     {grouped[type].map(material => {
-                      cconst netArea =
-  (material.dimensions.width  - 0.05) *
-  (material.dimensions.height - 0.05) *
-  material.quantity;
-
+                      const netArea =
+                        (material.dimensions.width  - 0.05) *
+                        (material.dimensions.height - 0.05) *
+                        material.quantity;
                       const netW = (material.dimensions.width - 0.05).toFixed(2);
                       const netH = (material.dimensions.height - 0.05).toFixed(2);
                       return (
-                        <tr key={material.id}>
+                        <tr key={material.id} className="hover:bg-slate-50 transition">
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{material.name}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{formatCurrency(material.pricePerUnit)}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-900">{netArea.toFixed(2)}</td>
@@ -120,7 +119,7 @@ const QuotationPreview: React.FC = () => {
           {quotation.showDefaultMeasure && (
             <div className="mt-4 text-sm italic text-slate-500 border-t pt-4">
               <p>Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.</p>
-              <p>O valor final será baseado no ramenio oficial com medida real líququida de cada chapa.</p>
+              <p>O valor final será baseado no ramenio oficial com medida real líquída de cada chapa.</p>
             </div>
           )}
         </div>
