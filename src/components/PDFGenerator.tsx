@@ -10,14 +10,18 @@ const PDFGenerator: React.FC = () => {
 
   const generatePDF = () => {
     const doc = new jsPDF();
-    // Agrupa e ordena
+
+    // Agrupa e ordena materiais
     const grouped = quotation.materials.reduce((acc, m) => {
       if (!acc[m.type]) acc[m.type] = [];
       acc[m.type].push(m);
       return acc;
     }, {} as Record<MaterialType, typeof quotation.materials>);
     const sortedTypes = Object.keys(grouped).sort() as MaterialType[];
-    const total = quotation.materials.reduce((sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity), 0);
+    const total = quotation.materials.reduce(
+      (sum, m) => sum + calculateTotal(m.pricePerUnit, m.quantity),
+      0
+    );
 
     // Cabeçalho
     doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
@@ -30,7 +34,8 @@ const PDFGenerator: React.FC = () => {
     let yPos = 70;
     sortedTypes.forEach((type) => {
       doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
-      doc.text(type, 15, yPos); yPos += 6;
+      doc.text(type, 15, yPos);
+      yPos += 6;
 
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
       ['Material', 'Preço/m²', 'Área (m²)', 'Medida líquida', 'Qtd', 'Total', 'Detalhes'].forEach((header, i) => {
@@ -41,13 +46,19 @@ const PDFGenerator: React.FC = () => {
       doc.setFont('helvetica', 'normal');
       grouped[type].forEach((m) => {
         if (yPos > 270) { doc.addPage(); yPos = 20; }
-        const grossArea = m.dimensions.width * m.dimensions.height * m.quantity;
+
+        // Cálculo da área líquida
+        const netArea =
+          (m.dimensions.width  - 0.05) *
+          (m.dimensions.height - 0.05) *
+          m.quantity;
         const netW = (m.dimensions.width - 0.05).toFixed(2);
         const netH = (m.dimensions.height - 0.05).toFixed(2);
+
         [
           m.name,
           formatCurrency(m.pricePerUnit),
-          grossArea.toFixed(2),
+          netArea.toFixed(2),
           `${netW} x ${netH}`,
           String(m.quantity),
           formatCurrency(calculateTotal(m.pricePerUnit, m.quantity)),
@@ -98,9 +109,17 @@ const PDFGenerator: React.FC = () => {
     // Observação de medida padrão (condicional)
     if (quotation.showDefaultMeasure) {
       doc.setFont('helvetica', 'italic'); doc.setFontSize(8);
-      doc.text('Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.', 15, yPos);
+      doc.text(
+        'Obs: Medida padrão considerada 2,90 x 1,90 apenas para visualização do pedido, podendo variar para mais ou para menos.',
+        15,
+        yPos
+      );
       yPos += 4;
-      doc.text('O valor final será baseado no ramenio oficial com medida real líquida de cada chapa.', 15, yPos);
+      doc.text(
+        'O valor final será baseado no ramenio oficial com medida real líquida de cada chapa.',
+        15,
+        yPos
+      );
     }
 
     return doc;
@@ -115,9 +134,11 @@ const PDFGenerator: React.FC = () => {
     const doc = generatePDF();
     const blob = doc.output('blob');
     const filename = `Orçamento ${quotation.company} - ${quotation.client}.pdf`;
-    if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'application/pdf' })] })) {
-      await navigator.share({ files: [new File([blob], filename, { type: 'application/pdf' })], text: `Orçamento - ${quotation.company}
-Cliente: ${quotation.client}` });
+    if (
+      navigator.canShare &&
+      navigator.canShare({ files: [new File([blob], filename, { type: 'application/pdf' })] })
+    ) {
+      await navigator.share({ files: [new File([blob], filename, { type: 'application/pdf' })], text: `Orçamento - ${quotation.company}\nCliente: ${quotation.client}` });
     } else {
       const url = URL.createObjectURL(blob);
       window.open(`https://wa.me/?text=${encodeURIComponent(url)}`, '_blank');
@@ -136,7 +157,6 @@ Cliente: ${quotation.client}` });
         <FilePdf className="h-6 w-6 mr-2" />
         Gerar Orçamento PDF
       </button>
-
       <button
         onClick={handleShareWhatsApp}
         disabled={isDisabled}
